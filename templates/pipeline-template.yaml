@@ -1,0 +1,123 @@
+parameters:
+- name: 'tfVersion'
+  type: string
+  default: '0.15.4'
+- name: 'freezeQueryId'
+  type: string
+  default: 'fde6db1b-dec1-4dc5-a553-0a047ef96864'
+- name: 'buildJobs'
+  type: jobList
+
+trigger:
+  branches:
+    include:
+      - '*'
+
+variables:
+  TF_VERSION: "${{ parameters.tfVersion }}"
+  TF_INPUT: "0"
+  TF_IN_AUTOMATION: "1"
+  TF_PLUGIN_CACHE_DIR: ".terraform.d/plugin-cache"
+  TF_MODULES_REPO: "https://dev.azure.com/skfdc/REP-SW/_git/terraform-modules"
+  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
+
+
+stages:
+- stage: build
+  displayName: build
+  jobs:
+  - ${{ each job in parameters.buildJobs }}:
+    - ${{ each pair in job }}:         
+        ${{ pair.key }}: ${{ pair.value }}
+  
+  
+- stage: deploy_sandbox
+  dependsOn: build
+  displayName: Deploy to sandbox
+  condition: and(succeeded(), eq(variables.isMain, true))
+  jobs:
+  - template: terraform-deploy-template.yaml
+    parameters:
+      stage: sandbox
+
+- stage: check_freeze
+  displayName: No Freeze
+  dependsOn: deploy_sandbox
+  jobs:
+  - job: CheckFreezePBI
+    pool: server
+    steps:
+    - task: queryWorkItems@0
+      displayName: 'Query Work Items'
+      inputs:
+        queryId: ${{ parameters.freezeQueryId }}
+
+- stage: deploy_test
+  dependsOn: check_freeze
+  displayName: Deploy to test
+  condition: and(succeeded(), eq(variables.isMain, true))
+  jobs:
+  - job: deploy
+    displayName: Deploy to test
+    steps:
+    - script: echo deploy test
+#  - template: terraform-deploy-template.yaml
+#    parameters:
+#      stage: test
+
+- stage: wait_staging_approval
+  displayName: Wait for staging approval
+  jobs:
+  - job: approve
+    pool: server
+    timeoutInMinutes: 1440 # job times out in 1 day
+    steps:
+    - task: ManualValidation@0
+      timeoutInMinutes: 1440 # task times out in 1 day
+      inputs:
+        notifyUsers: |
+          peter.svensson@skf.com
+        instructions: 'Please validate the build and release'
+        onTimeout: 'reject'
+
+- stage: deploy_staging
+  dependsOn: wait_staging_approval
+  displayName: Deploy to staging
+  condition: and(succeeded(), eq(variables.isMain, true))
+  jobs:
+  - job: deploy
+    displayName: Deploy to staging
+    steps:
+    - script: echo deploy staging
+#    - template: terraform-deploy-template.yaml
+#      parameters:
+#        stage: staging
+
+- stage: wait_release_approval
+  displayName: Wait for release approval
+  jobs:
+    - job: approve
+      pool: server
+      timeoutInMinutes: 1440 # job times out in 1 day
+      steps:
+        - task: ManualValidation@0
+          timeoutInMinutes: 1440 # task times out in 1 day
+          inputs:
+            notifyUsers: |
+              peter.svensson@skf.com
+            instructions: 'Please validate the build and release'
+            onTimeout: 'reject'
+
+
+- stage: deploy_prod
+  dependsOn: wait_release_approval
+  displayName: Deploy to prod
+  condition: and(succeeded(), eq(variables.isMain, true))
+  jobs:
+  - job: deploy
+    displayName: Deploy to prod
+    steps:
+    - script: echo deploy prod
+#    - template: terraform-deploy-template.yaml
+#      parameters:
+#        stage: prod

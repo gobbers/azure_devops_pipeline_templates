@@ -1,0 +1,24 @@
+parameters:
+- name: stage
+  type: string
+
+jobs:
+- deployment: deploy
+  displayName:  Deploy to ${{ parameters.stage }}
+  environment: fault-frequency-${{ parameters.stage }}
+  strategy:
+    runOnce:
+      deploy:
+        steps:
+          - script: |
+              git config --global http.$(TF_MODULES_REPO).extraHeader "Authorization: Bearer $(System.AccessToken)"
+            displayName: Prepare cloning external Terraform dependencies
+          - task: charleszipp.azure-pipelines-tasks-terraform.azure-pipelines-tasks-terraform-installer.TerraformInstaller@0
+            displayName: "Install Terraform $(TF_VERSION)"
+            inputs:
+              terraformVersion: $(TF_VERSION)
+          - script: |
+              mkdir -p $(TF_PLUGIN_CACHE_DIR)
+              terraform init && terraform apply -auto-approve
+            displayName: Terraforming
+            workingDirectory: $(Pipeline.Workspace)/terraform/env/${{ parameters.stage }}
