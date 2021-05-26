@@ -6,6 +6,12 @@ This repository contains common pipeline templates.
 Create a `.azure-pipelines.yaml` file in your repository with the following content:
 
 ```yaml
+pool:
+  name: Enlight
+  demands:
+    - sh
+    - ADO_AGENT_PREFIX -equals linux-build-agent-ci
+    
 resources:
   repositories:
   - repository: templates
