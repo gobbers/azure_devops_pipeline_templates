@@ -1,0 +1,20 @@
+parameters:
+- name: stage
+  type: string
+- name: emails
+  type: string
+  default: 'peter.svensson@skf.com'
+stages:
+- stage: wait_${{ parameters.stage }}_approval
+  displayName: Wait for ${{ parameters.stage }} approval
+  jobs:
+    - job: approve
+      pool: server
+      timeoutInMinutes: 1440 # job times out in 1 day
+      steps:
+        - task: ManualValidation@0
+          timeoutInMinutes: 1440 # task times out in 1 day
+          inputs:
+            notifyUsers: ${{ parameters.emails }}
+            instructions: 'Please validate the release to ${{ parameters.stage }}'
+            onTimeout: 'reject'

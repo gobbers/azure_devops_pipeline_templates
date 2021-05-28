@@ -1,9 +1,18 @@
 parameters:
 - name: stage
   type: string
+- name: 'terraform'
+  type: object
 
 jobs:
 - deployment: deploy
+  variables:
+    TF_INPUT: "0"
+    TF_IN_AUTOMATION: "1"
+    TF_VERSION: "${{ parameters.terraform.version }}"
+    TF_PLUGIN_CACHE_DIR: "${{ parameters.terraform.cache_dir }}"
+    TF_MODULES_REPO: "${{ parameters.terraform.modules_repo }}"
+
   displayName:  Deploy to ${{ parameters.stage }}
   environment: fault-frequency-${{ parameters.stage }}
   strategy:
@@ -20,5 +29,5 @@ jobs:
           - script: |
               mkdir -p $(TF_PLUGIN_CACHE_DIR)
               terraform init && terraform apply -auto-approve
-            displayName: Terraforming
+            displayName: Terraforming ${{ parameters.stage }}
             workingDirectory: $(Pipeline.Workspace)/terraform/env/${{ parameters.stage }}
