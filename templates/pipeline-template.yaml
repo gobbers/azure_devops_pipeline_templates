@@ -69,7 +69,7 @@ stages:
       - template: terraform-deploy-template.yaml
         parameters:
           stage: staging
-        project: ${{ parameters.project }}
+          project: ${{ parameters.project }}
           terraform: ${{ parameters.terraform }}
 
   - template: await-approval-template.yaml
