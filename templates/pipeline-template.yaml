@@ -62,14 +62,10 @@ stages:
     displayName: Deploy to staging
     condition: succeeded()
     jobs:
-    - job: deploy
-      displayName: Deploy to staging
-      steps:
-      - script: echo deploy staging
-#     - template: terraform-deploy-template.yaml
-#       parameters:
-#         stage: staging
-#         terraform: ${{ parameters.terraform }}
+      - template: terraform-deploy-template.yaml
+        parameters:
+          stage: staging
+          terraform: ${{ parameters.terraform }}
 
   - template: await-approval-template.yaml
     parameters:
@@ -80,11 +76,7 @@ stages:
     displayName: Deploy to prod
     condition: succeeded()
     jobs:
-    - job: deploy
-      displayName: Deploy to prod
-      steps:
-      - script: echo deploy prod
-#     - template: terraform-deploy-template.yaml
-#       parameters:
-#         stage: prod
-#         terraform: ${{ parameters.terraform }}
+      - template: terraform-deploy-template.yaml
+        parameters:
+          stage: prod
+          terraform: ${{ parameters.terraform }}
