@@ -10,6 +10,8 @@ parameters:
   default: 'fde6db1b-dec1-4dc5-a553-0a047ef96864'
 - name: 'buildJobs'
   type: jobList
+- name: project
+  type: string
 
 stages:
 - stage: build
@@ -29,6 +31,7 @@ stages:
     - template: terraform-deploy-template.yaml
       parameters:
         stage: sandbox
+        project: ${{ parameters.project }}
         terraform: ${{ parameters.terraform }}
 
   - stage: check_freeze
@@ -51,6 +54,7 @@ stages:
     - template: terraform-deploy-template.yaml
       parameters:
         stage: test
+        project: ${{ parameters.project }}
         terraform: ${{ parameters.terraform }}
 
   - template: await-approval-template.yaml
@@ -65,6 +69,7 @@ stages:
       - template: terraform-deploy-template.yaml
         parameters:
           stage: staging
+        project: ${{ parameters.project }}
           terraform: ${{ parameters.terraform }}
 
   - template: await-approval-template.yaml
@@ -79,4 +84,5 @@ stages:
       - template: terraform-deploy-template.yaml
         parameters:
           stage: prod
+          project: ${{ parameters.project }}
           terraform: ${{ parameters.terraform }}
