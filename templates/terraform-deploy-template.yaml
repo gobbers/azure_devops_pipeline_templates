@@ -1,6 +1,8 @@
 parameters:
 - name: stage
   type: string
+- name: project
+  type: string
 - name: 'terraform'
   type: object
 
@@ -14,7 +16,7 @@ jobs:
     TF_MODULES_REPO: "${{ parameters.terraform.modules_repo }}"
 
   displayName:  Deploy to ${{ parameters.stage }}
-  environment: fault-frequency-${{ parameters.stage }}
+  environment: ${project}-${{ parameters.stage }}
   strategy:
     runOnce:
       deploy:
