@@ -48,14 +48,10 @@ stages:
     displayName: Deploy to test
     condition: succeeded()
     jobs:
-    - job: deploy
-      displayName: Deploy to test
-      steps:
-      - script: echo deploy test
-#     - template: terraform-deploy-template.yaml
-#       parameters:
-#         stage: test
-#         terraform: ${{ parameters.terraform }}
+    - template: terraform-deploy-template.yaml
+      parameters:
+        stage: test
+        terraform: ${{ parameters.terraform }}
 
   - template: await-approval-template.yaml
     parameters:
