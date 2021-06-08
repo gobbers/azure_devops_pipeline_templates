@@ -16,7 +16,7 @@ jobs:
     TF_MODULES_REPO: "${{ parameters.terraform.modules_repo }}"
 
   displayName: Deploy to ${{ parameters.stage }}
-  environment: ${project}-${{ parameters.stage }}
+  environment: ${{ parameters.project }}-${{ parameters.stage }}
   strategy:
     runOnce:
       deploy:
