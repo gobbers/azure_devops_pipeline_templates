@@ -27,7 +27,7 @@ stages:
     stage: sandbox
 
 - stage: deploy_sandbox
-  dependsOn: build
+  dependsOn: wait_sandbox_approval
   displayName: Deploy to sandbox
   condition: succeeded()
   jobs:
@@ -43,7 +43,7 @@ stages:
 
 - stage: check_freeze
   displayName: No Freeze
-  dependsOn: deploy_sandbox
+  dependsOn: wait_test_approval
   jobs:
   - job: CheckFreezePBI
     pool: server
