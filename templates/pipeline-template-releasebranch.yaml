@@ -1,0 +1,95 @@
+parameters:
+- name: 'terraform'
+  type: object
+  default:
+    version: '0.15.4'
+    modules_repo: 'https://dev.azure.com/skfdc/REP-SW/_git/terraform-modules'
+    cache_dir: '.terraform.d/plugin-cache'
+- name: 'freezeQueryId'
+  type: string
+  default: 'fde6db1b-dec1-4dc5-a553-0a047ef96864'
+- name: 'buildJobs'
+  type: jobList
+- name: project
+  type: string
+
+stages:
+- stage: build
+  displayName: build
+  jobs:
+  - ${{ each job in parameters.buildJobs }}:
+    - ${{ each pair in job }}:
+        ${{ pair.key }}: ${{ pair.value }}
+
+
+- template: await-approval-template.yaml
+  parameters:
+    stage: sandbox
+
+- stage: deploy_sandbox
+  dependsOn: build
+  displayName: Deploy to sandbox
+  condition: succeeded()
+  jobs:
+  - template: terraform-deploy-template.yaml
+    parameters:
+      stage: sandbox
+      project: ${{ parameters.project }}
+      terraform: ${{ parameters.terraform }}
+
+- template: await-approval-template.yaml
+  parameters:
+    stage: test
+
+- stage: check_freeze
+  displayName: No Freeze
+  dependsOn: deploy_sandbox
+  jobs:
+  - job: CheckFreezePBI
+    pool: server
+    steps:
+    - task: queryWorkItems@0
+      displayName: 'Query Work Items'
+      inputs:
+        queryId: ${{ parameters.freezeQueryId }}
+
+- stage: deploy_test
+  dependsOn: check_freeze
+  displayName: Deploy to test
+  condition: succeeded()
+  jobs:
+  - template: terraform-deploy-template.yaml
+    parameters:
+      stage: test
+      project: ${{ parameters.project }}
+      terraform: ${{ parameters.terraform }}
+
+- template: await-approval-template.yaml
+  parameters:
+    stage: staging
+
+- stage: deploy_staging
+  dependsOn: wait_staging_approval
+  displayName: Deploy to staging
+  condition: succeeded()
+  jobs:
+    - template: terraform-deploy-template.yaml
+      parameters:
+        stage: staging
+        project: ${{ parameters.project }}
+        terraform: ${{ parameters.terraform }}
+
+- template: await-approval-template.yaml
+  parameters:
+    stage: prod
+
+- stage: deploy_prod
+  dependsOn: wait_prod_approval
+  displayName: Deploy to prod
+  condition: succeeded()
+  jobs:
+    - template: terraform-deploy-template.yaml
+      parameters:
+        stage: prod
+        project: ${{ parameters.project }}
+        terraform: ${{ parameters.terraform }}
